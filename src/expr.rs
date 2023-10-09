@@ -21,6 +21,9 @@ pub enum Expr {
         operator: UnaryOperator,
         right: Box<Expr>,
     },
+    Variable {
+        name: String,
+    },
 }
 
 impl Expr {
@@ -44,6 +47,9 @@ impl Expr {
         Self::Grouping {
             expression: Box::new(expression),
         }
+    }
+    pub fn variable(name: String) -> Self {
+        Self::Variable { name }
     }
 }
 
@@ -91,6 +97,7 @@ impl Display for Expr {
             }
             Expr::Literal { value } => write!(f, "{value}",),
             Expr::Unary { operator, right } => write!(f, "{operator} {right}",),
+            Expr::Variable { name } => write!(f, "var: {name}",),
         }
     }
 }

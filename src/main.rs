@@ -3,11 +3,7 @@ use std::{env, path::Path};
 use parser::Parser;
 use tokens::Token;
 
-use crate::{
-    eval::Interpreter,
-    expr::{BinaryOperator, Expr, Literal, UnaryOperator},
-    tokens::Lexer,
-};
+use crate::{eval::Interpreter, tokens::Lexer};
 
 mod errors;
 mod eval;
@@ -15,6 +11,7 @@ mod expr;
 mod tokens;
 #[macro_use]
 mod macros;
+mod environment;
 mod parser;
 
 fn main() {
@@ -73,22 +70,15 @@ fn run(tokens: Vec<Token>, interpreter: &mut Interpreter) {
     // display_tokens(&tokens);
 
     let parser = Parser::new(tokens);
-    let expr = match parser.parse() {
-        Ok(expr) => expr,
-        Err(_) => return,
-    };
+    let stmts = parser.parse();
 
-    println!("evaluating {expr}");
-
-    let result = match expr.evaluate(interpreter) {
+    match interpreter.interpret(stmts) {
         Ok(result) => result,
         Err(e) => {
             println!("{e}");
             return;
         }
     };
-
-    println!("{result}");
 
     // todo!()
 }

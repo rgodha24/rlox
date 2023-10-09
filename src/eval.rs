@@ -1,6 +1,10 @@
 use std::fmt::Display;
 
-use crate::expr::{BinaryOperator, Expr, Literal, UnaryOperator};
+use crate::{
+    environment::Environment,
+    expr::{BinaryOperator, Expr, Literal, UnaryOperator},
+    parser::Stmt,
+};
 
 use BinaryOperator as BO;
 use RuntimeErrorType as RE;
@@ -30,7 +34,45 @@ impl From<Literal> for Value {
 
 // probably gonna be useful eventually
 #[derive(Debug, Clone, Default)]
-pub struct Interpreter {}
+pub struct Interpreter {
+    env: Environment,
+}
+
+impl Interpreter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn interpret_stmt(&mut self, expr: Stmt) -> Result<(), RuntimeErrorType> {
+        match expr {
+            Stmt::Expr(expr) => {
+                let value = expr.evaluate(self)?;
+                println!("{}", value);
+            }
+            Stmt::Print(expr) => {
+                let value = expr.evaluate(self)?;
+                println!("{}", value);
+            }
+            Stmt::Var { name, initializer } => {
+                let value = match initializer {
+                    Some(expr) => expr.evaluate(self)?,
+                    None => V::Nil,
+                };
+
+                self.env.define(name, value);
+            }
+        };
+        Ok(())
+    }
+
+    pub fn interpret(&mut self, stmts: Vec<Stmt>) -> Result<(), RuntimeErrorType> {
+        for stmt in stmts {
+            self.interpret_stmt(stmt)?;
+        }
+
+        Ok(())
+    }
+}
 
 impl Expr {
     pub fn evaluate(self, interpreter: &mut Interpreter) -> Result<Value, RuntimeErrorType> {
@@ -79,6 +121,7 @@ impl Expr {
                     UO::Bang => Ok(V::Boolean(!right.is_truthy())),
                 }
             }
+            Expr::Variable { name } => interpreter.env.get(name),
         }
     }
 }
@@ -94,6 +137,9 @@ pub enum RuntimeErrorType {
         left: Value,
         right: Value,
     },
+
+    /// trying to access a variable that doesn't exist
+    UndefinedVariable(String),
 }
 
 impl Display for RuntimeErrorType {
@@ -107,6 +153,7 @@ impl Display for RuntimeErrorType {
             } => {
                 write!(f, "Illegal operation: {} {} {}", left, operator, right)
             }
+            RE::UndefinedVariable(name) => write!(f, "Undefined variable access: {}", name),
         }
     }
 }
