@@ -258,10 +258,8 @@ pub enum TokenType {
     Less,
     LessEqual,
 
-    // literals
+    // literals/values
     Identifier(String),
-
-    // values (considered literals by the book but we have sum types in rust :D )
     String(String),
     Number(f64),
     Nil,

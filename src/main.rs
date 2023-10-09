@@ -2,13 +2,35 @@ use std::{env, path::Path};
 
 use tokens::Token;
 
-use crate::tokens::Lexer;
+use crate::{
+    expr::{BinaryOperator, Expr, Literal, UnaryOperator},
+    tokens::Lexer,
+};
 
 mod errors;
+mod expr;
 mod tokens;
+#[macro_use]
+mod macros;
 
 fn main() {
     let args = env::args().collect::<Vec<String>>();
+    let expr = Expr::Binary {
+        left: Box::new(Expr::Unary {
+            operator: UnaryOperator::Minus,
+            right: Box::new(Expr::Literal {
+                value: Literal::Number(123.),
+            }),
+        }),
+        operator: BinaryOperator::Star,
+        right: Box::new(Expr::Grouping {
+            expression: Box::new(Expr::Literal {
+                value: Literal::Number(45.67),
+            }),
+        }),
+    };
+    println!("{expr}");
+
     match args.len() {
         1 => run_prompt(),
         2 => run_file(&args[2]),
