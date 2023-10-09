@@ -1,4 +1,8 @@
-use std::fmt::Display;
+use std::{
+    cell::{Cell, RefCell},
+    fmt::Display,
+    rc::Rc,
+};
 
 use crate::{
     environment::Environment,
@@ -33,9 +37,9 @@ impl From<Literal> for Value {
 }
 
 // probably gonna be useful eventually
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct Interpreter {
-    env: Environment,
+    env: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
@@ -59,7 +63,17 @@ impl Interpreter {
                     None => V::Nil,
                 };
 
-                self.env.define(name, value);
+                self.env.borrow_mut().define(name, value);
+            }
+            Stmt::Block(stmts) => {
+                let env = Environment::new_enclosed(self.env.clone());
+                let mut interpreter = Interpreter {
+                    env: Rc::new(env.into()),
+                };
+
+                interpreter.interpret(stmts)?;
+
+                std::mem::drop(interpreter);
             }
         };
         Ok(())
@@ -121,7 +135,12 @@ impl Expr {
                     UO::Bang => Ok(V::Boolean(!right.is_truthy())),
                 }
             }
-            Expr::Variable { name } => interpreter.env.get(name),
+            Expr::Variable { name } => interpreter.env.borrow().get(&name),
+            Expr::Assign { name, value } => {
+                let value = value.evaluate(interpreter)?;
+                interpreter.env.borrow_mut().assign(&name, value.clone())?;
+                Ok(value)
+            }
         }
     }
 }

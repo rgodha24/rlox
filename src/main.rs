@@ -19,7 +19,7 @@ fn main() {
 
     match args.len() {
         1 => run_prompt(),
-        // 2 => run_file(&args[2]),
+        2 => run_file(&args[1]),
         _ => println!("Usage: lox [script]"),
     }
 }
@@ -45,7 +45,7 @@ fn run_prompt() {
             }
         };
 
-        run(tokens, &mut interpreter);
+        run(tokens, &mut interpreter, false);
     }
 }
 
@@ -63,10 +63,10 @@ fn run_file(path: &str) {
 
     let mut interpreter = Interpreter::default();
 
-    run(tokens, &mut interpreter);
+    run(tokens, &mut interpreter, true);
 }
 
-fn run(tokens: Vec<Token>, interpreter: &mut Interpreter) {
+fn run(tokens: Vec<Token>, interpreter: &'_ mut Interpreter, is_running_file: bool) {
     // display_tokens(&tokens);
 
     let parser = Parser::new(tokens);
@@ -76,6 +76,9 @@ fn run(tokens: Vec<Token>, interpreter: &mut Interpreter) {
         Ok(result) => result,
         Err(e) => {
             println!("{e}");
+            if is_running_file {
+                std::process::exit(70);
+            }
             return;
         }
     };

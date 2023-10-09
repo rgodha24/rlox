@@ -5,6 +5,7 @@ use crate::{
     tokens::{Token, TokenType},
 };
 
+#[derive(Debug)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
@@ -23,6 +24,10 @@ pub enum Expr {
     },
     Variable {
         name: String,
+    },
+    Assign {
+        name: String,
+        value: Box<Expr>,
     },
 }
 
@@ -98,6 +103,7 @@ impl Display for Expr {
             Expr::Literal { value } => write!(f, "{value}",),
             Expr::Unary { operator, right } => write!(f, "{operator} {right}",),
             Expr::Variable { name } => write!(f, "var: {name}",),
+            Expr::Assign { name, value } => write!(f, "var: {name} = {value}"),
         }
     }
 }

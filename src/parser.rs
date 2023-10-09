@@ -5,7 +5,6 @@ use crate::{
     tokens::{Token, TokenType},
 };
 
-use Literal as L;
 use ParserErrorType as PET;
 use TokenType as T;
 
@@ -15,6 +14,7 @@ pub struct Parser {
     current: usize,
 }
 
+#[derive(Debug)]
 pub enum Stmt {
     Expr(Expr),
     Print(Expr),
@@ -22,6 +22,7 @@ pub enum Stmt {
         name: String,
         initializer: Option<Expr>,
     },
+    Block(Vec<Stmt>),
 }
 
 type FaillableExpr = Result<Expr, ParserError>;
@@ -87,8 +88,25 @@ impl Parser {
         if self.next_is(vec![T::Print]) {
             return self.print_statement();
         }
+        if self.next_is(vec![T::LeftBrace]) {
+            return self.block_statement();
+        }
 
         self.expression_statement()
+    }
+
+    fn block_statement(&mut self) -> Result<Stmt, ParserError> {
+        let mut statements = vec![];
+
+        while !self.is(T::RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration());
+        }
+
+        self.consume(T::RightBrace, PET::UnclosedBlock)?;
+
+        Ok(Stmt::Block(
+            statements.into_iter().filter_map(|s| s).collect(),
+        ))
     }
 
     fn print_statement(&mut self) -> Result<Stmt, ParserError> {
@@ -123,7 +141,26 @@ impl Parser {
     }
 
     fn expresssion(&mut self) -> FaillableExpr {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> FaillableExpr {
+        let expr = self.equality()?;
+
+        if self.next_is(vec![T::Equal]) {
+            let equals = self.previous().clone();
+            let value = self.assignment()?;
+
+            match expr {
+                Expr::Variable { name } => Ok(Expr::Assign {
+                    name,
+                    value: Box::new(value),
+                }),
+                _ => Err(ParserError::new(PET::InvalidAssignmentTarget, equals)),
+            }
+        } else {
+            Ok(expr)
+        }
     }
 
     fn equality(&mut self) -> FaillableExpr {
@@ -263,6 +300,29 @@ impl Parser {
     }
 }
 
+impl Display for Stmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Stmt::Expr(e) => write!(f, "{}", e),
+            Stmt::Print(e) => write!(f, "print {}", e),
+            Stmt::Var {
+                name,
+                initializer: Some(i),
+            } => write!(f, "var {} = {}", name, i),
+            Stmt::Var {
+                name,
+                initializer: None,
+            } => write!(f, "var {}", name),
+            Stmt::Block(e) => {
+                for s in e {
+                    write!(f, "{}", s)?;
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ParserError {
     error_type: ParserErrorType,
@@ -295,6 +355,8 @@ pub enum ParserErrorType {
     ExpectedExpression,
     MissingSemicolon,
     MissingIdentifier,
+    InvalidAssignmentTarget,
+    UnclosedBlock,
 }
 
 impl Display for ParserErrorType {
@@ -305,6 +367,8 @@ impl Display for ParserErrorType {
             PET::ExpectedExpression => write!(f, "Expected expression"),
             PET::MissingSemicolon => write!(f, "Missing semicolon"),
             PET::MissingIdentifier => write!(f, "Missing Variable Name"),
+            PET::InvalidAssignmentTarget => write!(f, "Invalid assignment target"),
+            PET::UnclosedBlock => write!(f, "Unclosed block"),
         }
     }
 }
