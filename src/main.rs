@@ -4,11 +4,13 @@ use parser::Parser;
 use tokens::Token;
 
 use crate::{
+    eval::Interpreter,
     expr::{BinaryOperator, Expr, Literal, UnaryOperator},
     tokens::Lexer,
 };
 
 mod errors;
+mod eval;
 mod expr;
 mod tokens;
 #[macro_use]
@@ -20,13 +22,16 @@ fn main() {
 
     match args.len() {
         1 => run_prompt(),
-        2 => run_file(&args[2]),
+        // 2 => run_file(&args[2]),
         _ => println!("Usage: lox [script]"),
     }
 }
 
 fn run_prompt() {
     let stdin = std::io::stdin();
+
+    let mut interpreter = Interpreter::default();
+
     loop {
         let mut line = String::new();
         stdin.read_line(&mut line).unwrap();
@@ -43,7 +48,7 @@ fn run_prompt() {
             }
         };
 
-        run(tokens);
+        run(tokens, &mut interpreter);
     }
 }
 
@@ -59,23 +64,31 @@ fn run_file(path: &str) {
         }
     };
 
-    run(tokens);
+    let mut interpreter = Interpreter::default();
+
+    run(tokens, &mut interpreter);
 }
 
-fn run(tokens: Vec<Token>) {
+fn run(tokens: Vec<Token>, interpreter: &mut Interpreter) {
     // display_tokens(&tokens);
 
     let parser = Parser::new(tokens);
-    match parser.parse() {
-        Ok(expr) => println!("{}", expr),
+    let expr = match parser.parse() {
+        Ok(expr) => expr,
         Err(_) => return,
     };
 
-    // todo!()
-}
+    println!("evaluating {expr}");
 
-fn display_tokens(tokens: &Vec<Token>) {
-    for token in tokens {
-        println!("{}", token);
-    }
+    let result = match expr.evaluate(interpreter) {
+        Ok(result) => result,
+        Err(e) => {
+            println!("{e}");
+            return;
+        }
+    };
+
+    println!("{result}");
+
+    // todo!()
 }

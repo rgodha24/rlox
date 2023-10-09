@@ -57,7 +57,7 @@ pub enum Literal {
     False,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOperator {
     Slash,
     Star,
