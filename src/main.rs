@@ -1,5 +1,6 @@
 use std::{env, path::Path};
 
+use parser::Parser;
 use tokens::Token;
 
 use crate::{
@@ -12,24 +13,10 @@ mod expr;
 mod tokens;
 #[macro_use]
 mod macros;
+mod parser;
 
 fn main() {
     let args = env::args().collect::<Vec<String>>();
-    let expr = Expr::Binary {
-        left: Box::new(Expr::Unary {
-            operator: UnaryOperator::Minus,
-            right: Box::new(Expr::Literal {
-                value: Literal::Number(123.),
-            }),
-        }),
-        operator: BinaryOperator::Star,
-        right: Box::new(Expr::Grouping {
-            expression: Box::new(Expr::Literal {
-                value: Literal::Number(45.67),
-            }),
-        }),
-    };
-    println!("{expr}");
 
     match args.len() {
         1 => run_prompt(),
@@ -41,7 +28,6 @@ fn main() {
 fn run_prompt() {
     let stdin = std::io::stdin();
     loop {
-        print!("> ");
         let mut line = String::new();
         stdin.read_line(&mut line).unwrap();
         if line.is_empty() {
@@ -77,12 +63,18 @@ fn run_file(path: &str) {
 }
 
 fn run(tokens: Vec<Token>) {
-    display_tokens(tokens);
+    // display_tokens(&tokens);
+
+    let parser = Parser::new(tokens);
+    match parser.parse() {
+        Ok(expr) => println!("{}", expr),
+        Err(_) => return,
+    };
 
     // todo!()
 }
 
-fn display_tokens(tokens: Vec<Token>) {
+fn display_tokens(tokens: &Vec<Token>) {
     for token in tokens {
         println!("{}", token);
     }

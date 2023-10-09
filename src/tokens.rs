@@ -226,14 +226,20 @@ impl<'a> Lexer<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: String,
-    line: usize,
+    pub token_type: TokenType,
+    pub lexeme: String,
+    pub line: usize,
 }
 
-#[derive(Debug)]
+impl Token {
+    pub fn is(&self, token_type: TokenType) -> bool {
+        self.token_type == token_type
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum TokenType {
     // single char
     LeftParen,
@@ -284,9 +290,61 @@ pub enum TokenType {
     EOF,
 }
 
+// I love chatgpt
+impl PartialEq for TokenType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            // single char
+            (TokenType::LeftParen, TokenType::LeftParen)
+            | (TokenType::RightParen, TokenType::RightParen)
+            | (TokenType::LeftBrace, TokenType::LeftBrace)
+            | (TokenType::RightBrace, TokenType::RightBrace)
+            | (TokenType::Comma, TokenType::Comma)
+            | (TokenType::Dot, TokenType::Dot)
+            | (TokenType::Minus, TokenType::Minus)
+            | (TokenType::Plus, TokenType::Plus)
+            | (TokenType::Semicolon, TokenType::Semicolon)
+            | (TokenType::Slash, TokenType::Slash)
+            | (TokenType::Star, TokenType::Star)
+            | (TokenType::Bang, TokenType::Bang)
+            | (TokenType::BangEqual, TokenType::BangEqual)
+            | (TokenType::Equal, TokenType::Equal)
+            | (TokenType::EqualEqual, TokenType::EqualEqual)
+            | (TokenType::Greater, TokenType::Greater)
+            | (TokenType::GreaterEqual, TokenType::GreaterEqual)
+            | (TokenType::Less, TokenType::Less)
+            | (TokenType::LessEqual, TokenType::LessEqual)
+            | (TokenType::And, TokenType::And)
+            | (TokenType::Class, TokenType::Class)
+            | (TokenType::Else, TokenType::Else)
+            | (TokenType::Fun, TokenType::Fun)
+            | (TokenType::For, TokenType::For)
+            | (TokenType::If, TokenType::If)
+            | (TokenType::Or, TokenType::Or)
+            | (TokenType::Print, TokenType::Print)
+            | (TokenType::Return, TokenType::Return)
+            | (TokenType::Super, TokenType::Super)
+            | (TokenType::This, TokenType::This)
+            | (TokenType::Var, TokenType::Var)
+            | (TokenType::While, TokenType::While)
+            | (TokenType::EOF, TokenType::EOF) => true,
+
+            // literals/values
+            (TokenType::Identifier(_), TokenType::Identifier(_))
+            | (TokenType::String(_), TokenType::String(_))
+            | (TokenType::Number(_), TokenType::Number(_))
+            | (TokenType::Nil, TokenType::Nil)
+            | (TokenType::True, TokenType::True)
+            | (TokenType::False, TokenType::False) => true,
+
+            _ => false,
+        }
+    }
+}
+
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "type: {} lexeme: {}", self.token_type, self.lexeme)
+        write!(f, "{}: {}", self.token_type, self.lexeme)
     }
 }
 

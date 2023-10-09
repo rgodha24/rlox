@@ -23,6 +23,30 @@ pub enum Expr {
     },
 }
 
+impl Expr {
+    pub fn binary(left: Expr, operator: BinaryOperator, right: Expr) -> Self {
+        Self::Binary {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        }
+    }
+    pub fn unary(operator: UnaryOperator, right: Expr) -> Self {
+        Self::Unary {
+            operator,
+            right: Box::new(right),
+        }
+    }
+    pub fn literal(value: Literal) -> Self {
+        Self::Literal { value }
+    }
+    pub fn grouping(expression: Expr) -> Self {
+        Self::Grouping {
+            expression: Box::new(expression),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Literal {
     Identifier(String),
@@ -44,6 +68,8 @@ pub enum BinaryOperator {
     GreaterEqual,
     Less,
     LessEqual,
+    Minus,
+    Plus,
 }
 
 #[derive(Debug)]
@@ -72,13 +98,13 @@ impl Display for Expr {
 impl TryFrom<TokenType> for BinaryOperator {
     type Error = ();
     fn try_from(token: TokenType) -> Result<BinaryOperator, ()> {
-        convert!(TokenType; BinaryOperator; token; Slash,Star,BangEqual,Equal,EqualEqual,Greater,GreaterEqual,Less,LessEqual,;)
+        convert!(TokenType; BinaryOperator; token; Slash,Star,BangEqual,Equal,EqualEqual,Greater,GreaterEqual,Less,LessEqual,Minus,Plus,;)
     }
 }
 
 impl Into<TokenType> for &BinaryOperator {
     fn into(self) -> TokenType {
-        let token = convert!(BinaryOperator; TokenType; self; Slash,Star,BangEqual,Equal,EqualEqual,Greater,GreaterEqual,Less,LessEqual,;);
+        let token = convert!(BinaryOperator; TokenType; self; Slash,Star,BangEqual,Equal,EqualEqual,Greater,GreaterEqual,Less,LessEqual,Minus,Plus,;);
         // unfaillable but my macro just sucks lmao
         token.unwrap()
     }
